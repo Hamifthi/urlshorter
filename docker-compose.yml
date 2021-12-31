@@ -1,0 +1,41 @@
+version: "3.6"
+
+networks:
+  web:
+
+volumes:
+  urlshortner_psql_data:
+
+services:
+
+  postgres:
+    restart: unless-stopped
+    image: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=urlshortner
+    volumes:
+      - urlshortner_psql_data:/var/lib/postgresql/data:z
+      - ./postgres/migrations/create_db_and_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    ports:
+      - "5432:5432"
+    container_name: "urlshortner_postgres"
+    networks:
+      - web
+
+  go:
+    build:
+      dockerfile: ./Dockerfile
+      context: .
+    restart: unless-stopped
+    env_file:
+      - docker.env
+    depends_on:
+      - postgres
+    volumes:
+      - ./:/go/src/urlshortner
+    ports:
+      - "8080:8080"
+    networks:
+      - web
